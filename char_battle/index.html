@@ -233,12 +233,26 @@ function applyOraDmg(tg, amt){
       sTxt(tg.x, tg.y - tg.r - 55, "屏障破碎!", "#4488ff", 20, 360);
     }
     if(amt <= 0) return;
-  }
-  
+  }  
   // 实际扣血
   tg.hp -= amt;
   tg.flash = 8;
 }
+function barrierAbsorb(tg, amt){
+    if(!tg.barrier || amt <= 0) return amt;
+    var abs = Math.min(amt, tg.barrierHP);
+    tg.barrierHP -= abs;
+    amt -= abs;
+    sP(tg.x, tg.y, "#4488ff", 8, 4);
+    if(tg.barrierHP <= 0){
+        tg.barrier = false;
+        tg.barrierCD = tg.def.barrierCD || 1080;
+        sS(tg.x, tg.y, tg.r + 20, "#4488ff");
+        sTxt(tg.x, tg.y - tg.r - 55, "屏障破碎!", "#4488ff", 20, 360);
+    }
+    return amt;
+}
+
 function dd(tg, amt, src, ignoreInv) {var _rm=escRed(tg);if(amt>0&&_rm<=0){sTxt(tg.x,tg.y-tg.r-50,"免疫","#aaccff",16,50);return}amt*=_rm;if(amt<=0)return;
 if(tg.def.type==="baie"&&tg.state==="stance"){amt=amt*(1-tg.def.stanceDmgReduce);if(Math.random()<0.3)sP(tg.x,tg.y,"#ffaa00",3,2);}
 if(tg.barrier){var abs=Math.min(amt,tg.barrierHP);tg.barrierHP-=abs;amt-=abs;sP(tg.x,tg.y,"#4488ff",8,4);if(tg.barrierHP<=0){tg.barrier=false;tg.barrierCD=tg.def.barrierCD;sS(tg.x,tg.y,tg.r+20,"#4488ff");sTxt(tg.x,tg.y-tg.r-55,"屏障破碎!","#4488ff",20,360)}if(amt<=0)return}
@@ -272,7 +286,8 @@ if(c.def.barrierCD&&c.barrierEn>=100&&!c.barrier&&c.barrierCD<=0){c.barrier=true
 }
 
 // Obstacle collisions (before character collision)
-for(var oi=0;oi<obstacles.length;oi++){var ob=obstacles[oi];var ca=[c1,c2];for(var ai=0;ai<ca.length;ai++){var cc=ca[ai];if(cc.dead)continue;var odx=cc.x-ob.x,ody=cc.y-ob.y,ods=Math.sqrt(odx*odx+ody*ody),omd=cc.r+ob.r;if(ods<omd&&ods>0){var onx=odx/ods,ony=ody/ods;cc.x=ob.x+onx*omd;cc.y=ob.y+ony*omd;var ovn=cc.vx*onx+cc.vy*ony;if(ovn<0){cc.vx-=2*onx*ovn;cc.vy-=2*ony*ovn;if(cc.def.id!=="wishadel"&&cc.inv<=0){cc.hp-=80*escRed(cc);cc.flash=8;cc.inv=12;sD(cc.x,cc.y-cc.r,80,"#ff2222");sP(cc.x,cc.y,"#ff6644",15,5)}}}}}
+for(var oi=0;oi<obstacles.length;oi++){var ob=obstacles[oi];var ca=[c1,c2];for(var ai=0;ai<ca.length;ai++){var cc=ca[ai];if(cc.dead)continue;var odx=cc.x-ob.x,ody=cc.y-ob.y,ods=Math.sqrt(odx*odx+ody*ody),omd=cc.r+ob.r;if(ods<omd&&ods>0){var onx=odx/ods,ony=ody/ods;cc.x=ob.x+onx*omd;cc.y=ob.y+ony*omd;var ovn=cc.vx*onx+cc.vy*ony;if(ovn<0){cc.vx-=2*onx*ovn;cc.vy-=2*ony*ovn;if(cc.def.id!=="wishadel"&&cc.inv<=0){var odmg = barrierAbsorb(cc, 80 * escRed(cc));
+if(odmg > 0) cc.hp -= odmg;cc.flash=8;cc.inv=12;sD(cc.x,cc.y-cc.r,80,"#ff2222");sP(cc.x,cc.y,"#ff6644",15,5)}}}}}
 
 
 
@@ -470,15 +485,18 @@ if(p.type==="dianneng_normal"||p.type==="dianneng_ult"){
         var cc=cs[j];
         if(cc===p.owner||cc.dead)continue;
         var pdx=p.x-cc.x,pdy=p.y-cc.y,pds=Math.sqrt(pdx*pdx+pdy*pdy);
-        if(pds<cc.r+p.size/2){
+        if(pds<cc.r+p.size){
             if(!cc.diannengDmgCD||cc.diannengDmgCD<=0){
-                var dmg=Math.round(p.dmg*escRed(cc));
-                cc.hp-=dmg;
-                cc.flash=6;
-                cc.diannengDmgCD=5; // 0.5秒伤害间隔
-                sD(cc.x,cc.y-cc.r,dmg,"#00ffff");
-                sP(cc.x,cc.y,"#00ffff",6,4);
-                sS(cc.x,cc.y,45,"#00ccff");
+                var dmg = Math.round(p.dmg * escRed(cc));
+                dmg = barrierAbsorb(cc, dmg);
+                if(dmg > 0){
+                    cc.hp -= dmg;
+                    cc.flash = 6;
+                    sD(cc.x, cc.y - cc.r, dmg, "#00ffff");
+                    sP(cc.x, cc.y, "#00ffff", 6, 4);
+                    sS(cc.x, cc.y, 45, "#00ccff");
+                    }
+                cc.diannengDmgCD = 5;
             }
         }
     }
@@ -522,9 +540,31 @@ for(var j=0;j<cs.length;j++){var cc=cs[j];if(cc===orb.owner||cc.dead)continue;
 var od=Math.sqrt((orb.x-cc.x)*(orb.x-cc.x)+(orb.y-cc.y)*(orb.y-cc.y));
 if(od<cc.r+orb.r){
 // Blue orb: damage only, no bounce, pass through
-if(orb.type==="blue"){if(!cc.orbCDblue){cc.hp-=orb.dmg*escRed(cc);cc.flash=8;sP(cc.x,cc.y,"#4488ff",8,3);cc.orbCDblue=120}}
+if(orb.type==="blue"){
+    if(!cc.orbCDblue){
+        var bdmg = barrierAbsorb(cc, orb.dmg * escRed(cc));
+        if(bdmg > 0){
+            cc.hp -= bdmg;
+            cc.flash = 8;
+            sP(cc.x, cc.y, "#4488ff", 8, 3);
+        }
+        cc.orbCDblue = 120;
+    }
+}
 // Red orb: full collision, bounce, damage
-if(orb.type==="red"){cc.hp-=orb.dmg*escRed(cc);cc.flash=8;kb(cc,orb.x,orb.y,8);sP(cc.x,cc.y,"#ff3333",10,5);var rnx=orb.x-cc.x,rny=orb.y-cc.y,rnd=Math.sqrt(rnx*rnx+rny*rny)||1;orb.vx=rnx/rnd*Math.abs(orb.vx);orb.vy=rny/rnd*Math.abs(orb.vy)}}}
+if(orb.type==="red"){
+    var rdmg = barrierAbsorb(cc, orb.dmg * escRed(cc));
+    if(rdmg > 0){
+        cc.hp -= rdmg;
+        cc.flash = 8;
+        kb(cc, orb.x, orb.y, 8);
+        sP(cc.x, cc.y, "#ff3333", 10, 5);
+        var rnx = orb.x - cc.x, rny = orb.y - cc.y, rnd = Math.sqrt(rnx*rnx + rny*rny) || 1;
+        orb.vx = rnx / rnd * Math.abs(orb.vx);
+        orb.vy = rny / rnd * Math.abs(orb.vy);
+    }
+}
+}}
 // Orb-orb
 if(orbs.length>=2&&oi<orbs.length){for(var oj=orbs.length-1;oj>=0;oj--){if(oi===oj||oi>=orbs.length||oj>=orbs.length)continue;
 var o2=orbs[oj];if(orb.type===o2.type)continue;
