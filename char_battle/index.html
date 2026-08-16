@@ -545,7 +545,7 @@ if(p.type==="fire"){expls.push({x:p.x,y:p.y,size:80,life:480,ml:480});sP(p.x,p.y
 
 if(p.type==="normal"){hit.slowAmt=p.owner.def.slowAmt;hit.slowT=p.owner.def.slowDur;sTxt(hit.x,hit.y-hit.r-50,"减速!","#88ccff",18,120)}if(p.type==="rod"){sP(p.x,p.y,"#ff6600",8,4);sS(p.x,p.y,30,"#ffaa00");}
 projs.splice(i,1);continue}
-if(p.type==="rod"){ctx.fillStyle="#000000";ctx.beginPath();ctx.moveTo(0,-p.size/2);ctx.lineTo(p.size/2,0);ctx.lineTo(0,p.size/2);ctx.lineTo(-p.size/2,0);ctx.closePath();ctx.fill();ctx.strokeStyle="#ff6600";ctx.lineWidth=2;ctx.stroke();}if(p.type==="meteor_small"||p.type==="meteor_big"){var landed=(p.targetY&&p.y>=p.targetY)||p.y>AY+AH+50;if(landed){var er=p.type==="meteor_big"?120:50;expls.push({x:p.x,y:p.y,size:er*2,life:480,ml:480});sP(p.x,p.y,"#ff6600",p.type==="meteor_big"?50:20,10);sS(p.x,p.y,er,"#ff4400");for(var k=0;k<cs.length;k++){var tc=cs[k];if(tc===p.owner||tc.dead)continue;var tdx=tc.x-p.x,tdy=tc.y-p.y,td=Math.sqrt(tdx*tdx+tdy*tdy);if(td<er*2+tc.r){dd(tc,p.dmg,p.owner,true);var knock=p.type==="meteor_big"?15:5;var kbBoost=p.type==="meteor_big"?6:3;var kbLock=p.type==="meteor_big"?90:45;if(!noFly(tc)){kb(tc,p.x,p.y,knock);tc.boost=kbBoost;tc.boostLock=kbLock;}}}projs.splice(i,1);continue}}if(p.life<=0){projs.splice(i,1)}}
+if(p.type==="rod"){ctx.fillStyle="#000000";ctx.beginPath();ctx.moveTo(0,-p.size/2);ctx.lineTo(p.size/2,0);ctx.lineTo(0,p.size/2);ctx.lineTo(-p.size/2,0);ctx.closePath();ctx.fill();ctx.strokeStyle="#ff6600";ctx.lineWidth=2;ctx.stroke();}if(p.type==="meteor_small"||p.type==="meteor_big"){var landed=(p.targetY&&p.y>=p.targetY)||p.y>AY+AH+50;if(landed){var er=p.type==="meteor_big"?120:50;expls.push({x:p.x,y:p.y,size:er*2,life:480,ml:480});sP(p.x,p.y,"#ff6600",p.type==="meteor_big"?50:20,10);sS(p.x,p.y,er,"#ff4400");for(var k=0;k<cs.length;k++){var tc=cs[k];if(tc===p.owner||tc.dead)continue;var tdx=tc.x-p.x,tdy=tc.y-p.y,td=Math.sqrt(tdx*tdx+tdy*tdy);if(td<er*1.5+tc.r){dd(tc,p.dmg,p.owner,true);var knock=p.type==="meteor_big"?15:5;var kbBoost=p.type==="meteor_big"?6:3;var kbLock=p.type==="meteor_big"?90:45;if(!noFly(tc)){kb(tc,p.x,p.y,knock);tc.boost=kbBoost;tc.boostLock=kbLock;}}}projs.splice(i,1);continue}}if(p.life<=0){projs.splice(i,1)}}
 
 // Orb physics
 for(var oi=orbs.length-1;oi>=0;oi--){var orb=orbs[oi];if(!orb)continue;
@@ -587,7 +587,7 @@ expls.push({x:ex,y:ey,size:160,life:100,ml:100,kind:"purple"});sP(ex,ey,"#8800ff
 sTxt(AX+AW/2,AY+AH/2,"茈","#8800ff",150,360);
 for(var k=0;k<cs.length;k++){var tc=cs[k];if(tc.dead||tc===orb.owner)continue;
 var td=Math.sqrt((tc.x-ex)*(tc.x-ex)+(tc.y-ey)*(tc.y-ey));
-if(td<350+tc.r){tc.hp-=200*escRed(tc);tc.flash=8;if(!noFly(tc)){kb(tc,ex,ey,18);tc.boost=5;tc.boostLock=90}sP(tc.x,tc.y,"#cc66ff",15,8)}}
+if(td<350+tc.r){dd(tc, 200, null, {noInvFrame: true});if(!noFly(tc)){kb(tc,ex,ey,18);tc.boost=5;tc.boostLock=90}sP(tc.x,tc.y,"#cc66ff",15,8)}}
 var a=Math.max(oi,oj),b=Math.min(oi,oj);orbs.splice(a,1);orbs.splice(b,1);break}}}
 }// Update explosions
 for(var i=expls.length-1;i>=0;i--){var ex=expls[i];ex.life--;if(ex.life<=0)expls.splice(i,1)}
