@@ -396,12 +396,25 @@ function kb(c,fx,fy,fc){var dx=c.x-fx,dy=c.y-fy,ds=Math.sqrt(dx*dx+dy*dy)||1;c.v
 function standAtk(c,o,ignoreInv){
     var nowJ=performance.now(),dto=Math.sqrt((c.x-o.x)*(c.x-o.x)+(c.y-o.y)*(c.y-o.y));
     c.fightPose=dto<c.def.attackRange;
+        // 战斗结束或承太郎死亡：强制停掉欧拉音效
+    if(o.hp<=0 || c.dead){
+        if(c.oraAudio){
+            c.oraAudio.pause();
+            c.oraAudio.currentTime=0;
+            if(c.oraAudio.parentNode) c.oraAudio.parentNode.removeChild(c.oraAudio);
+            c.oraAudio=null;
+            c.oraMinPlayUntil=0;
+        }
+        c.fightPose=false;
+        return;
+    }
     
     // 退出欧拉范围后，至少再播 0.5 秒才停
     if(c.oraAudio && !c.fightPose){
         if(nowJ >= (c.oraMinPlayUntil||0)){
             c.oraAudio.pause();
             c.oraAudio.currentTime=0;
+            if(c.oraAudio.parentNode) c.oraAudio.parentNode.removeChild(c.oraAudio);
             c.oraAudio=null;
             c.oraMinPlayUntil=0;
         }
@@ -424,15 +437,17 @@ function standAtk(c,o,ignoreInv){
         
         // 启动音效，同时设定"至少播到什么时候"
         if(!c.oraAudio){
-            var snd=AudioMgr.sounds['ora'];
-            if(snd){
-                c.oraAudio=snd.cloneNode();
-                c.oraAudio.loop=true;
-                c.oraAudio.volume=AudioMgr.vol*0.7;
-                c.oraAudio.play().catch(function(){});
-                c.oraMinPlayUntil=nowJ+350; // ← 关键：0.5秒后才有资格停
-            }
-        }
+    var snd=AudioMgr.sounds['ora'];
+    if(snd){
+        c.oraAudio=snd.cloneNode();
+        c.oraAudio.loop=true;
+        c.oraAudio.volume=AudioMgr.vol*0.7;
+        c.oraAudio.style.display='none';           // ← 隐藏
+        document.body.appendChild(c.oraAudio);       // ← 插入DOM
+        c.oraAudio.play().catch(function(){});
+        c.oraMinPlayUntil=nowJ+350;
+    }
+}
         
         if(c.oraN%c.def.oraNeedCount===0){
             var hd=Math.round(c.def.heavyDmg);
@@ -547,7 +562,13 @@ if(ss<=0){
     return
 }
 else if(ss!==cdNum){cdNum=ss;playSfx('count');showCd()}return}
-if(stopUntil>0){if(performance.now()>=stopUntil){stopUntil=0;if(c1.def.type==="stand")c1.scd=c1.def.sCD;else if(c2.def.type==="stand")c2.scd=c2.def.sCD}else{var jc=c1.def.type==="stand"?c1:(c2.def.type==="stand"?c2:null),jo=jc?(jc===c1?c2:c1):null;if(jc&&!jc.dead){jc.x+=jc.vx;jc.y+=jc.vy;var jsp=jc.def.speed*(1-jc.slowAmt)*(1+jc.boost),jcur=Math.sqrt(jc.vx*jc.vx+jc.vy*jc.vy);if(jcur>0.001){jc.vx=jc.vx/jcur*jsp;jc.vy=jc.vy/jcur*jsp}cl(jc);if(jo&&!jo.dead){var jdx=jc.x-jo.x,jdy=jc.y-jo.y,jds=Math.sqrt(jdx*jdx+jdy*jdy),jmd=jc.r+jo.r;if(jds<jmd&&jds>0){jc.x=jo.x+jdx/jds*jmd;jc.y=jo.y+jdy/jds*jmd}standAtk(jc,jo,true)}}for(var pi=pts.length-1;pi>=0;pi--){var pp=pts[pi];pp.x+=pp.vx;pp.y+=pp.vy;pp.l--;if(pp.l<=0)pts.splice(pi,1)}for(var di=dmgNums.length-1;di>=0;di--){var dn=dmgNums[di];dn.y+=dn.vy;dn.l--;if(dn.l<=0)dmgNums.splice(di,1)}for(var si2=shocks.length-1;si2>=0;si2--){var sk=shocks[si2];sk.r=sk.mr*(1-sk.l/sk.ml);sk.l--;if(sk.l<=0)shocks.splice(si2,1)}for(var ti=txts.length-1;ti>=0;ti--){var tt=txts[ti];tt.y+=tt.vy;tt.l--;if(tt.l<=0)txts.splice(ti,1)}if(sT>0){sT--;sx*=.85;sy*=.85}render();return}}var cs=[c1,c2];
+if(stopUntil>0){if(performance.now()>=stopUntil){stopUntil=0;if(c1.def.type==="stand")c1.scd=c1.def.sCD;else if(c2.def.type==="stand")c2.scd=c2.def.sCD;
+     var jo = (c1.def.type==="stand") ? c2 : c1;
+    if(jo.beamAudio && jo.beaming)       jo.beamAudio.play().catch(function(){});
+    if(jo.transformAudio && jo.transformed) jo.transformAudio.play().catch(function(){});
+    if(jo.ultAudio && jo.state==="ult_cast") jo.ultAudio.play().catch(function(){});
+    if(jo.oraAudio && jo.fightPose)      jo.oraAudio.play().catch(function(){});
+}else{var jc=c1.def.type==="stand"?c1:(c2.def.type==="stand"?c2:null),jo=jc?(jc===c1?c2:c1):null;if(jc&&!jc.dead){jc.x+=jc.vx;jc.y+=jc.vy;var jsp=jc.def.speed*(1-jc.slowAmt)*(1+jc.boost),jcur=Math.sqrt(jc.vx*jc.vx+jc.vy*jc.vy);if(jcur>0.001){jc.vx=jc.vx/jcur*jsp;jc.vy=jc.vy/jcur*jsp}cl(jc);if(jo&&!jo.dead){var jdx=jc.x-jo.x,jdy=jc.y-jo.y,jds=Math.sqrt(jdx*jdx+jdy*jdy),jmd=jc.r+jo.r;if(jds<jmd&&jds>0){jc.x=jo.x+jdx/jds*jmd;jc.y=jo.y+jdy/jds*jmd}standAtk(jc,jo,true)}}for(var pi=pts.length-1;pi>=0;pi--){var pp=pts[pi];pp.x+=pp.vx;pp.y+=pp.vy;pp.l--;if(pp.l<=0)pts.splice(pi,1)}for(var di=dmgNums.length-1;di>=0;di--){var dn=dmgNums[di];dn.y+=dn.vy;dn.l--;if(dn.l<=0)dmgNums.splice(di,1)}for(var si2=shocks.length-1;si2>=0;si2--){var sk=shocks[si2];sk.r=sk.mr*(1-sk.l/sk.ml);sk.l--;if(sk.l<=0)shocks.splice(si2,1)}for(var ti=txts.length-1;ti>=0;ti--){var tt=txts[ti];tt.y+=tt.vy;tt.l--;if(tt.l<=0)txts.splice(ti,1)}if(sT>0){sT--;sx*=.85;sy*=.85}render();return}}var cs=[c1,c2];
 escT++;if(escaOn){
 var escCt=escT%19800;
 
@@ -690,6 +711,11 @@ if(c.scd<=0&&stopUntil<=0){
   stopUntil=performance.now()+(c.def.timeStopLen||9000);
   // 2. 音频立刻播放（浏览器解码需要时间，让它尽早开始）
  playSfx('timestop');
+ // 时停开始：暂停对手音效（保留DOM和进度，只暂停）
+if(o.beamAudio)   o.beamAudio.pause();
+if(o.transformAudio) o.transformAudio.pause();
+if(o.ultAudio)    o.ultAudio.pause();
+if(o.oraAudio)   { o.oraAudio.pause(); o.oraMinPlayUntil = 0; }
   // 3. 画面特效延迟 18 帧（约 300ms），等"砸瓦鲁多"喊出来后再爆发
   runAfter(18,function(){
     sTxt(AX+AW/2,AY+AH/2,"砸瓦鲁多!","#00ccff",110,300);
